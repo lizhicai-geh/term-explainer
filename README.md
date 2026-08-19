@@ -1,8 +1,8 @@
 # dsh-term-explainer
 
-一个 DeepSeek Harness（DSH）cordis 插件：在对话中**选中文本 → 出现「解释」按钮 → 点击后右侧弹出对话框**，结合上下文用当前默认模型解释所选文字，并支持多轮追问。
+一个 DeepSeek Harness（DSH）cordis 插件：在对话中**选中文本 → 出现「解释」按钮 → 点击后右侧弹出对话框**，结合上下文用当前会话模型解释所选文字，并支持多轮追问。
 
-- 服务端（Host）半：注册 `/api/term-explainer/explain` 接口，调用 `llm` 生成解释。
+- 服务端（Host）半：注册 `/api/term-explainer/explain` 接口，调用 `llm` 用当前会话模型生成解释（回退到默认模型 / 首个可用 provider）。
 - 浏览器（Client）半：文本选中监听、浮动「解释」按钮、可拖动/缩放的对话框、亮暗模式适配。
 
 ## 仓库结构
@@ -82,4 +82,4 @@ pnpm install && pnpm build && ls lib/index.js lib/client.js
 
 - `src/index.ts` / `src/client/index.tsx` 里的结构类型（`LlmLike`、`WebServerLike`、`any`）可在真实仓库换成
   `@deepseek-ai/dsh-llm` 等官方类型（当前已按 rc.7 的宿主 API 对齐：`webServer.register`、`llm.stream` 块协议、
-  `agentDefaultModel.currentSelection`、client 侧 `slots`/`locale` 服务）。
+  客户端传入的当前会话模型 + 回退 `agentDefaultModel.currentSelection`，client 侧 `slots`/`locale`/`sessions`/`modelDirectories` 服务）。

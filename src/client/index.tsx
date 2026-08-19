@@ -110,6 +110,32 @@ export default {
       }
     }
 
+    // 当前会话模型：从 sessions 服务取当前会话 id，再从 modelDirectories 取该会话的
+    // 模型选择（provider / model / reasoningEffort）。任一环节缺失就返回 null，交给
+    // Host 端回退到 agentDefaultModel / 首个可用 provider。
+    const sessionsService = ctx.get('sessions') as any | undefined
+    const modelDirectories = ctx.get('modelDirectories') as any | undefined
+    const currentModel = (): { provider: string; model: string; reasoningEffort?: string } | null => {
+      try {
+        if (sessionsService === undefined || modelDirectories === undefined) return null
+        const list = sessionsService.list
+        const sessionId = list && typeof list.getSnapshot === 'function' ? list.getSnapshot().current : undefined
+        if (!sessionId) return null
+        if (typeof modelDirectories.directoryFor !== 'function') return null
+        const dir = modelDirectories.directoryFor(sessionId)
+        const snap = dir && dir.store && typeof dir.store.getSnapshot === 'function' ? dir.store.getSnapshot() : undefined
+        const cur = snap && snap.current
+        if (cur && typeof cur.provider === 'string' && cur.provider && typeof cur.model === 'string' && cur.model) {
+          const model: { provider: string; model: string; reasoningEffort?: string } = { provider: cur.provider, model: cur.model }
+          if (typeof cur.reasoningEffort === 'string' && cur.reasoningEffort) model.reasoningEffort = cur.reasoningEffort
+          return model
+        }
+        return null
+      } catch {
+        return null
+      }
+    }
+
     ctx.effect(() => {
       const el = document.createElement('style')
       el.setAttribute('data-plugin', 'term-explainer')
@@ -148,10 +174,13 @@ export default {
         setPopup((p) => (p ? { ...p, loading: true, error: null } : p))
         let result: any
         try {
+          const model = currentModel()
+          const payload: Record<string, unknown> = { text, context, turns, locale: currentLocale() }
+          if (model !== null) payload.model = model
           const resp = await fetch('/api/term-explainer/explain', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ text, context, turns, locale: currentLocale() }),
+            body: JSON.stringify(payload),
           })
           result = await resp.json()
         } catch (err) {

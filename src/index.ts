@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 /**
  * term-explainer 服务端（Host）半：
  * 通过 webServer 暴露一个包私有 HTTP 接口 `/api/term-explainer/explain`，
- * 浏览器端把选中文本 + 上下文 + 对话历史 POST 过来，这里用当前默认模型流式生成解释。
+ * 浏览器端把选中文本 + 上下文 + 对话历史 + 当前会话模型 POST 过来，这里用该模型流式生成解释。
  *
  * RPC 说明：这里刻意用 webServer 路由 + fetch，而不是 typert `@Remote` 代码生成，
  * 好处是零代码生成、易构建易验证；如需接入 DSH 的会话/鉴权/typert 体系，可再换成 `@Remote`。
@@ -43,16 +43,24 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 export default {
   name: 'term-explainer',
-  inject: ['webServer'],
+  inject: ['webServer', 'llm'],
   apply(ctx: Context) {
-    const llm = ctx.get('llm') as LlmLike | undefined
+    const llm = ctx.get('llm') as LlmLike
     const modelService = ctx.get('agentDefaultModel') as ModelServiceLike | undefined
-    const webServer = ctx.get('webServer') as WebServerLike | undefined
-    if (llm === undefined || webServer === undefined) return
+    const webServer = ctx.get('webServer') as WebServerLike
 
     let seq = 0
 
-    async function resolveRoute() {
+    async function resolveRoute(clientModel?: { provider?: unknown; model?: unknown; reasoningEffort?: unknown }) {
+      if (
+        clientModel !== undefined &&
+        typeof clientModel.provider === 'string' && clientModel.provider.length > 0 &&
+        typeof clientModel.model === 'string' && clientModel.model.length > 0
+      ) {
+        const route: { provider: string; model: string; reasoningEffort?: string } = { provider: clientModel.provider, model: clientModel.model }
+        if (typeof clientModel.reasoningEffort === 'string' && clientModel.reasoningEffort.length > 0) route.reasoningEffort = clientModel.reasoningEffort
+        return route
+      }
       if (modelService !== undefined) {
         try {
           const sel = modelService.currentSelection()
@@ -63,14 +71,14 @@ export default {
       }
       let providers: Array<{ id: string }> = []
       try {
-        providers = llm!.listProviders()
+        providers = llm.listProviders()
       } catch (err) {
         providers = []
       }
       for (const p of providers) {
         if (!p || !p.id) continue
         try {
-          const models = await llm!.listModels(p.id)
+          const models = await llm.listModels(p.id)
           if (models && models.length > 0 && models[0].id) {
             return { provider: p.id, model: models[0].id }
           }
@@ -116,7 +124,8 @@ export default {
             return
           }
 
-          const route = await resolveRoute()
+          const clientModel = args && typeof args.model === 'object' && args.model !== null ? args.model : undefined
+          const route = await resolveRoute(clientModel)
           if (route === null) {
             send(500, { ok: false, error: '没有可用的模型，请先在设置中配置模型。' })
             return
@@ -160,7 +169,7 @@ export default {
 
           try {
             let out = ''
-            for await (const chunk of llm!.stream(options)) {
+            for await (const chunk of llm.stream(options)) {
               if (chunk.type === 'text-delta') out += chunk.text
               else if (chunk.type === 'finish') {
                 if (chunk.reason.kind === 'error' || chunk.reason.kind === 'aborted') {
