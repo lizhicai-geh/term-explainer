@@ -1,0 +1,6 @@
+# term-explainer bundle patch: registers the host (server) half.
+# The browser half is served via the `dsh.client` declaration in package.json
+# (the client-modules scan builds window.__DSH_BOOT__ and serves /plugins/<id>/client.js).
+- insert:
+    - id: term-explainer
+      name: dsh-term-explainer
