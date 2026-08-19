@@ -36,7 +36,7 @@ term-explainer/
 ## 用户安装方式
 
 - Web GUI：设置 → DSH插件市场 → 找到本插件 → 一键安装；
-- 或官方 CLI：`dsh plugin --profile web install <owner>/dsh-term-explainer`；
+- 或官方 CLI：`dsh plugin --profile web install lizhicai-geh/dsh-term-explainer`；
 - 安装后**重启 DSH**（重新运行 `dsh web`）再刷新页面。
 
 ## 构建
