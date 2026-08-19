@@ -94,6 +94,7 @@ interface Hint {
 
 export default {
   name: 'term-explainer-client',
+  inject: ['slots', 'locale'],
   apply(ctx: Context) {
     const slots = ctx.get('slots') as any | undefined
     if (slots === undefined) return
@@ -301,7 +302,7 @@ export default {
           if (e.key === 'Escape') close()
         }
         function handleKeyUp(e: KeyboardEvent) {
-          if (e.key === 'Shift') handleMouseUp(e)
+          if (e.key === 'Shift') handleMouseUp(e as unknown as MouseEvent)
         }
         document.addEventListener('mouseup', handleMouseUp)
         document.addEventListener('keydown', handleKeyDown)

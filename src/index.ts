@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { IncomingMessage } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 /**
  * term-explainer 服务端（Host）半：
@@ -21,6 +21,14 @@ interface ModelServiceLike {
   currentSelection(): { provider: string; model: string; reasoningEffort?: string } | undefined
 }
 
+interface WebServerLike {
+  register(route: {
+    kind: 'exact'
+    path: string
+    handler: (req: IncomingMessage, res: ServerResponse) => void | Promise<void>
+  }): () => void
+}
+
 function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let data = ''
@@ -39,7 +47,8 @@ export default {
   apply(ctx: Context) {
     const llm = ctx.get('llm') as LlmLike | undefined
     const modelService = ctx.get('agentDefaultModel') as ModelServiceLike | undefined
-    if (llm === undefined) return
+    const webServer = ctx.get('webServer') as WebServerLike | undefined
+    if (llm === undefined || webServer === undefined) return
 
     let seq = 0
 
@@ -83,7 +92,7 @@ export default {
     }
 
     ctx.effect(() =>
-      ctx.webServer.register({
+      webServer.register({
         kind: 'exact',
         path: '/api/term-explainer/explain',
         handler: async (req, res) => {

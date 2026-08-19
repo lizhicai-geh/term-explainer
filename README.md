@@ -37,17 +37,28 @@ term-explainer/
 
 - Web GUI：设置 → DSH插件市场 → 找到本插件 → 一键安装；
 - 或官方 CLI：`dsh plugin --profile web install lizhicai-geh/term-explainer`；
+- 本地开发安装（从本仓库直接链接进 profile）：
+
+  ```bash
+  pnpm install && pnpm build
+  dsh plugin --profile web add .
+  ```
+
 - 安装后**重启 DSH**（重新运行 `dsh web`）再刷新页面。
+
+> 市场收录前提：GitHub 仓库页 Settings → Topics 添加 `dsh-plugin`（市场 CI 每 2 小时扫描一次）。
 
 ## 构建
 
 ```bash
 pnpm install
-pnpm build     # tsdown → lib/index.js（host）+ lib/client.js（client bundle）
+pnpm build     # tsdown → lib/index.js（host）+ lib/client.js（client bundle）；tsc → lib/types
 ```
 
-> `tsdown` 版本与入口配置请对齐仓库里现有 `@deepseek-ai/dsh-client-ui-*` 包；
-> 客户端产物必须产出 `window.__ModuleLoader__.load({ id, factory })` 形态（`dsh.client` 约定）。
+- `tsdown.config.ts` 双入口：Node 半（ESM）与浏览器半（CJS，`window.__ModuleLoader__.load({ id, factory })` 形态，
+  外部化平台种子模块 `react` / `react/jsx-runtime` 等，其余全部内联）；
+- 声明文件由 `tsc --emitDeclarationOnly` 产出到 `lib/types`（对应 package.json 的 `types`/`exports`）；
+- `prepare` 脚本保证 git/本地链接安装时自动构建。
 
 ## 关键设计说明
 
@@ -69,6 +80,6 @@ pnpm install && pnpm build && ls lib/index.js lib/client.js
 
 ## 待对齐点
 
-- `src/index.ts` / `src/client/index.tsx` 里的结构类型（`LlmLike`、`any`）可在真实仓库换成
-  `@deepseek-ai/dsh-llm` 等官方类型。
-- `tsdown` 的 client bundle 打包配置需与仓库里 `dsh-client-ui-*` 包保持一致（`window.__ModuleLoader__.load` 包装）。
+- `src/index.ts` / `src/client/index.tsx` 里的结构类型（`LlmLike`、`WebServerLike`、`any`）可在真实仓库换成
+  `@deepseek-ai/dsh-llm` 等官方类型（当前已按 rc.7 的宿主 API 对齐：`webServer.register`、`llm.stream` 块协议、
+  `agentDefaultModel.currentSelection`、client 侧 `slots`/`locale` 服务）。
