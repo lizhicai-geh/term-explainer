@@ -59,10 +59,12 @@ export default defineConfig([
     // tsdown auto-externalizes package dependencies; anything NOT in the
     // loader module table must inline instead. A require() the table cannot
     // answer is a guaranteed runtime throw, so the rule is the table list
-    // itself: no opinion for table entries (external above wins), bundle
+    // itself: no opinion for table entries (neverBundle above wins), bundle
     // everything else.
-    external: PLATFORM_EXTERNALS,
-    noExternal: (specifier) => (PLATFORM_EXTERNALS.includes(specifier) ? undefined : true),
+    deps: {
+      neverBundle: PLATFORM_EXTERNALS,
+      alwaysBundle: (id) => (PLATFORM_EXTERNALS.includes(id) ? undefined : true),
+    },
     outputOptions: {
       entryFileNames: 'client.js',
       banner: `window.__ModuleLoader__.load({ id: ${JSON.stringify(id)}, factory: (require) => {`,
