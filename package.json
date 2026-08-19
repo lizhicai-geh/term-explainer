@@ -40,7 +40,6 @@
   },
   "scripts": {
     "build": "tsdown && tsc --emitDeclarationOnly",
-    "prepare": "tsdown && tsc --emitDeclarationOnly",
     "watch": "tsdown --watch"
   },
   "peerDependencies": {

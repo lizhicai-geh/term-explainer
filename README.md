@@ -19,7 +19,7 @@ term-explainer/
 └── README.md
 ```
 
-构建产物（`lib/index.js` 与 `lib/client.js`）不提交，由 `tsdown` 生成。
+构建产物（`lib/`）**已提交到仓库**（产物型）：用户从 git/npm 安装直接拿到可运行代码，无需构建授权。
 
 ## 发布到 DSH 插件市场
 
@@ -45,6 +45,7 @@ term-explainer/
   ```
 
 - 安装后**重启 DSH**（重新运行 `dsh web`）再刷新页面。
+- 本插件为产物型（`lib/` 已提交），从 git/npm 安装**不会触发 `prepare` 构建授权**，无需配置 `allowBuilds`。
 
 > 市场收录前提：GitHub 仓库页 Settings → Topics 添加 `dsh-plugin`（市场 CI 每 2 小时扫描一次）。
 
@@ -58,7 +59,7 @@ pnpm build     # tsdown → lib/index.js（host）+ lib/client.js（client bundl
 - `tsdown.config.ts` 双入口：Node 半（ESM）与浏览器半（CJS，`window.__ModuleLoader__.load({ id, factory })` 形态，
   外部化平台种子模块 `react` / `react/jsx-runtime` 等，其余全部内联）；
 - 声明文件由 `tsc --emitDeclarationOnly` 产出到 `lib/types`（对应 package.json 的 `types`/`exports`）；
-- `prepare` 脚本保证 git/本地链接安装时自动构建。
+- `lib/` 已提交（产物型）：改代码后本地 `pnpm build` 重新生成并一并提交，无需 `prepare`/构建授权。
 
 ## 关键设计说明
 
